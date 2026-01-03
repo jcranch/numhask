@@ -61,11 +61,9 @@ module NumHask
 
     -- * Action
     AdditiveAction (..),
-    (+|),
     SubtractiveAction (..),
     (-|),
     MultiplicativeAction (..),
-    (*|),
     DivisiveAction (..),
     (/|),
     Module,

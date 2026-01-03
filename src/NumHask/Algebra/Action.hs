@@ -3,11 +3,9 @@
 -- Convention: the |'s in the operators point towards the higher-kinded number, representing an operator or action __into__ a structure.
 module NumHask.Algebra.Action
   ( AdditiveAction (..),
-    (+|),
     SubtractiveAction (..),
     (-|),
     MultiplicativeAction (..),
-    (*|),
     DivisiveAction (..),
     (/|),
     Module,
@@ -23,21 +21,20 @@ import Prelude (flip, Eq, Ord)
 -- | Additive Action
 --
 -- > m |+ zero == m
+-- > zero +| m == m
 class
   Additive s => AdditiveAction s m | m -> s
   where
 
   infixl 6 |+
   (|+) :: m -> s -> m
+  (|+) = flip (+|)
 
-infixl 6 +|
+  infixl 6 +|
+  (+|) :: s -> m -> m
+  (+|) = flip (|+)
 
--- | flipped additive action
---
--- > (+|) == flip (|+)
--- > zero +| m = m
-(+|) :: (AdditiveAction s m) => s -> m -> m
-(+|) = flip (|+)
+  {-# MINIMAL (|+) | (+|) #-}
 
 -- | Subtractive Action
 --
@@ -61,7 +58,7 @@ a -| b = a +| negate b
 -- | Multiplicative Action
 --
 -- > m |* one = m
--- > m |* zero = zero
+-- > one *| m = one
 class
   (Multiplicative s) =>
   MultiplicativeAction s m | m -> s
@@ -69,16 +66,13 @@ class
 
   infixl 7 |*
   (|*) :: m -> s -> m
+  (|*) = flip (*|)
 
-infixl 7 *|
+  infixl 7 *|
+  (*|) :: s -> m -> m
+  (*|) = flip (|*)
 
--- | flipped multiplicative action
---
--- > (*|) == flip (|*)
--- > one *| m = one
--- > zero *| m = zero
-(*|) :: (MultiplicativeAction s m) => s -> m -> m
-(*|) = flip (|*)
+  {-# MINIMAL (|*) | (*|) #-}
 
 -- | Divisive Action
 --
@@ -113,12 +107,14 @@ newtype TrivialAction a = TrivialAction {
 
 instance Additive a => AdditiveAction a (TrivialAction a) where
   TrivialAction a |+ b = TrivialAction (a + b)
+  a +| TrivialAction b = TrivialAction (a + b)
 
 instance Subtractive a => SubtractiveAction a (TrivialAction a) where
   TrivialAction a |- b = TrivialAction (a - b)
 
 instance Multiplicative a => MultiplicativeAction a (TrivialAction a) where
   TrivialAction a |* b = TrivialAction (a * b)
+  a *| TrivialAction b = TrivialAction (a * b)
 
 instance Divisive a => DivisiveAction a (TrivialAction a) where
   TrivialAction a |/ b = TrivialAction (a / b)
