@@ -13,6 +13,7 @@ import Data.Semigroup (Semigroup (..))
 import Data.Traversable (mapAccumL)
 import Data.Word (Word, Word16, Word32, Word64, Word8)
 import GHC.Natural (Natural (..))
+import NumHask.Data.Interop (FromBase (..))
 import Prelude (Bool, Double, Eq, Float, Int, Integer, Ord, Show, fromInteger)
 import Prelude qualified as P
 
@@ -97,121 +98,59 @@ class (Additive a) => Subtractive a where
   (-) :: a -> a -> a
   a - b = a + negate b
 
-instance Additive Double where
-  (+) = (P.+)
-  zero = 0
+instance P.Num a => Additive (FromBase a) where
+  FromBase x + FromBase y = FromBase (x P.+ y)
+  zero = FromBase (P.fromInteger 0)
 
-instance Subtractive Double where
-  (-) = (P.-)
-  negate = P.negate
+instance P.Num a => Subtractive (FromBase a) where
+  FromBase x - FromBase y = FromBase (x P.- y)
+  negate (FromBase x) = FromBase (P.negate x)
 
-instance Additive Float where
-  (+) = (P.+)
-  zero = 0
+deriving via FromBase Double instance Additive Double
+deriving via FromBase Double instance Subtractive Double
 
-instance Subtractive Float where
-  (-) = (P.-)
-  negate = P.negate
+deriving via FromBase Float instance Additive Float
+deriving via FromBase Float instance Subtractive Float
 
-instance Additive Int where
-  (+) = (P.+)
-  zero = 0
+deriving via FromBase Int instance Additive Int
+deriving via FromBase Int instance Subtractive Int
 
-instance Subtractive Int where
-  (-) = (P.-)
-  negate = P.negate
-
-instance Additive Integer where
-  (+) = (P.+)
-  zero = 0
-
-instance Subtractive Integer where
-  (-) = (P.-)
-  negate = P.negate
+deriving via FromBase Integer instance Additive Integer
+deriving via FromBase Integer instance Subtractive Integer
 
 instance Additive Bool where
   (+) = (P.||)
   zero = P.False
 
-instance Additive Natural where
-  (+) = (P.+)
-  zero = 0
+deriving via FromBase Natural instance Additive Natural
+deriving via FromBase Natural instance Subtractive Natural
 
-instance Subtractive Natural where
-  (-) = (P.-)
-  negate = P.negate
+deriving via FromBase Int8 instance Additive Int8
+deriving via FromBase Int8 instance Subtractive Int8
 
-instance Additive Int8 where
-  (+) = (P.+)
-  zero = 0
+deriving via FromBase Int16 instance Additive Int16
+deriving via FromBase Int16 instance Subtractive Int16
 
-instance Subtractive Int8 where
-  (-) = (P.-)
-  negate = P.negate
+deriving via FromBase Int32 instance Additive Int32
+deriving via FromBase Int32 instance Subtractive Int32
 
-instance Additive Int16 where
-  (+) = (P.+)
-  zero = 0
+deriving via FromBase Int64 instance Additive Int64
+deriving via FromBase Int64 instance Subtractive Int64
 
-instance Subtractive Int16 where
-  (-) = (P.-)
-  negate = P.negate
+deriving via FromBase Word instance Additive Word
+deriving via FromBase Word instance Subtractive Word
 
-instance Additive Int32 where
-  (+) = (P.+)
-  zero = 0
+deriving via FromBase Word8 instance Additive Word8
+deriving via FromBase Word8 instance Subtractive Word8
 
-instance Subtractive Int32 where
-  (-) = (P.-)
-  negate = P.negate
+deriving via FromBase Word16 instance Additive Word16
+deriving via FromBase Word16 instance Subtractive Word16
 
-instance Additive Int64 where
-  (+) = (P.+)
-  zero = 0
+deriving via FromBase Word32 instance Additive Word32
+deriving via FromBase Word32 instance Subtractive Word32
 
-instance Subtractive Int64 where
-  (-) = (P.-)
-  negate = P.negate
-
-instance Additive Word where
-  (+) = (P.+)
-  zero = 0
-
-instance Subtractive Word where
-  (-) = (P.-)
-  negate = P.negate
-
-instance Additive Word8 where
-  (+) = (P.+)
-  zero = 0
-
-instance Subtractive Word8 where
-  (-) = (P.-)
-  negate = P.negate
-
-instance Additive Word16 where
-  (+) = (P.+)
-  zero = 0
-
-instance Subtractive Word16 where
-  (-) = (P.-)
-  negate = P.negate
-
-instance Additive Word32 where
-  (+) = (P.+)
-  zero = 0
-
-instance Subtractive Word32 where
-  (-) = (P.-)
-  negate = P.negate
-
-instance Additive Word64 where
-  (+) = (P.+)
-  zero = 0
-
-instance Subtractive Word64 where
-  (-) = (P.-)
-  negate = P.negate
+deriving via FromBase Word64 instance Additive Word64
+deriving via FromBase Word64 instance Subtractive Word64
 
 instance (Additive b) => Additive (a -> b) where
   f + f' = \a -> f a + f' a

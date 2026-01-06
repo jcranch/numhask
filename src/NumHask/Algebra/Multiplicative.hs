@@ -12,7 +12,8 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Traversable (mapAccumL)
 import Data.Word (Word, Word16, Word32, Word64, Word8)
 import GHC.Natural (Natural (..))
-import Prelude (Double, Eq, Float, Int, Integer, Ord, Show, fromInteger, fromRational)
+import NumHask.Data.Interop (FromBase (..))
+import Prelude (Double, Eq, Float, Int, Integer, Ord, Show, fromInteger)
 import Prelude qualified as P
 
 -- $setup
@@ -96,71 +97,47 @@ class (Multiplicative a) => Divisive a where
   (/) :: a -> a -> a
   (/) a b = a * recip b
 
-instance Multiplicative Double where
-  (*) = (P.*)
-  one = 1.0
+instance P.Num a => Multiplicative (FromBase a) where
+  FromBase x * FromBase y = FromBase (x P.* y)
+  one = FromBase (P.fromInteger 1)
 
-instance Divisive Double where
-  recip = P.recip
+instance P.Fractional a => Divisive (FromBase a) where
+  FromBase x / FromBase y = FromBase (x P./ y)
+  recip (FromBase x) = FromBase (P.recip x)
 
-instance Multiplicative Float where
-  (*) = (P.*)
-  one = 1.0
+deriving via FromBase Double instance Multiplicative Double
+deriving via FromBase Double instance Divisive Double
 
-instance Divisive Float where
-  recip = P.recip
+deriving via FromBase Float instance Multiplicative Float
+deriving via FromBase Float instance Divisive Float
 
-instance Multiplicative Int where
-  (*) = (P.*)
-  one = 1
+deriving via FromBase Int instance Multiplicative Int
 
-instance Multiplicative Integer where
-  (*) = (P.*)
-  one = 1
+deriving via FromBase Integer instance Multiplicative Integer
 
 instance Multiplicative P.Bool where
   (*) = (P.&&)
   one = P.True
 
-instance Multiplicative Natural where
-  (*) = (P.*)
-  one = 1
+deriving via FromBase Natural instance Multiplicative Natural
 
-instance Multiplicative Int8 where
-  (*) = (P.*)
-  one = 1
+deriving via FromBase Int8 instance Multiplicative Int8
 
-instance Multiplicative Int16 where
-  (*) = (P.*)
-  one = 1
+deriving via FromBase Int16 instance Multiplicative Int16
 
-instance Multiplicative Int32 where
-  (*) = (P.*)
-  one = 1
+deriving via FromBase Int32 instance Multiplicative Int32
 
-instance Multiplicative Int64 where
-  (*) = (P.*)
-  one = 1
+deriving via FromBase Int64 instance Multiplicative Int64
 
-instance Multiplicative Word where
-  (*) = (P.*)
-  one = 1
+deriving via FromBase Word instance Multiplicative Word
 
-instance Multiplicative Word8 where
-  (*) = (P.*)
-  one = 1
+deriving via FromBase Word8 instance Multiplicative Word8
 
-instance Multiplicative Word16 where
-  (*) = (P.*)
-  one = 1
+deriving via FromBase Word16 instance Multiplicative Word16
 
-instance Multiplicative Word32 where
-  (*) = (P.*)
-  one = 1
+deriving via FromBase Word32 instance Multiplicative Word32
 
-instance Multiplicative Word64 where
-  (*) = (P.*)
-  one = 1
+deriving via FromBase Word64 instance Multiplicative Word64
 
 instance (Multiplicative b) => Multiplicative (a -> b) where
   f * f' = \a -> f a * f' a

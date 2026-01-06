@@ -66,6 +66,7 @@ library
     NumHask.Algebra.Ring
     NumHask.Data.Complex
     NumHask.Data.Integral
+    NumHask.Data.Interop
     NumHask.Data.Positive
     NumHask.Data.Rational
     NumHask.Exception
