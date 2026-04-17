@@ -68,7 +68,6 @@ library
     NumHask.Data.Integral
     NumHask.Data.Positive
     NumHask.Data.Rational
-    NumHask.Data.Wrapped
     NumHask.Exception
     NumHask.Prelude
 

@@ -119,34 +119,3 @@ ghci> unPositive (4 ∸ 7 :: Positive Int)
 ghci> unPositive (7 ∸ 4 :: Positive Int)
 3
 ```
-
-NumHask.Data.Wrapped
----
-
-The introduction of Positive provoked including a wrapper type for most numhask types. This type can be used with derivingvia:
-
-``` haskell
-newtype Positive a = UnsafePositive {unPositive :: a}
-  deriving stock
-    (Eq, Ord, Show)
-  deriving
-    ( Additive,
-      Multiplicative,
-      Divisive,
-      Integral,
-      FromInteger,
-      FromRational,
-      Basis,
-      Direction,
-      Epsilon,
-      AdditiveAction,
-      SubtractiveAction,
-      MultiplicativeAction,
-      DivisiveAction,
-      JoinSemiLattice,
-      MeetSemiLattice,
-      UpperBounded
-    )
-    via (Wrapped a)
-```
-

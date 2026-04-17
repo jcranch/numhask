@@ -28,7 +28,6 @@ import NumHask.Algebra.Multiplicative
 import NumHask.Algebra.Ring
 import NumHask.Data.Integral
 import NumHask.Data.Rational
-import NumHask.Data.Wrapped
 import Prelude (Eq, Ord, Show)
 import Prelude qualified as P
 
@@ -69,7 +68,7 @@ import Prelude qualified as P
 newtype Positive a = UnsafePositive {unPositive :: a}
   deriving stock
     (Eq, Ord, Show)
-  deriving
+  deriving newtype
     ( Additive,
       Multiplicative,
       Divisive,
@@ -87,7 +86,6 @@ newtype Positive a = UnsafePositive {unPositive :: a}
       MeetSemiLattice,
       UpperBounded
     )
-    via (Wrapped a)
 
 instance (MeetSemiLattice a, Integral a) => FromIntegral (Positive a) a where
   fromIntegral a = positive a
