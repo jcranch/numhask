@@ -60,8 +60,6 @@ newtype Complex a = Complex {complexPair :: (a, a)}
   deriving
     ( Additive,
       Subtractive,
-      Basis,
-      Direction,
       Epsilon,
       JoinSemiLattice,
       MeetSemiLattice,
@@ -70,6 +68,14 @@ newtype Complex a = Complex {complexPair :: (a, a)}
       ExpField
     )
     via (EuclideanPair a)
+
+instance (ExpField a, Eq a) => Basis a (Complex a) (Complex a) where
+  magnitude (Complex a) = magnitude (EuclideanPair a)
+  basis (Complex a) = let EuclideanPair b = basis (EuclideanPair a) in Complex b
+
+instance (TrigField a) => Direction a (Complex a) where
+  angle (Complex a) = angle (EuclideanPair a)
+  ray a = let EuclideanPair b = ray a in Complex b
 
 infixl 6 +:
 
@@ -119,8 +125,7 @@ instance (Distributive a, Subtractive a) => InvolutiveRing (Complex a) where
   adj (Complex (r, i)) = r +: negate i
 
 -- Can't use DerivingVia due to extra Whole constraints
-instance (Subtractive a, QuotientField a) => QuotientField (Complex a) where
-  type Whole (Complex a) = Complex (Whole a)
+instance (Subtractive a, QuotientField i a) => QuotientField (Complex i) (Complex a) where
 
   properFraction (Complex (x, y)) =
     (Complex (xwhole, ywhole), Complex (xfrac, yfrac))

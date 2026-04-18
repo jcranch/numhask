@@ -17,7 +17,6 @@ module NumHask.Algebra.Action
   )
 where
 
-import Data.Kind (Type)
 import NumHask.Algebra.Additive (Additive(..), Subtractive(..))
 import NumHask.Algebra.Multiplicative (Divisive(..), Multiplicative(..))
 import NumHask.Algebra.Ring (Distributive)
@@ -27,13 +26,11 @@ import Prelude (flip, Eq, Ord)
 --
 -- > m |+ zero == m
 class
-  (Additive (AdditiveScalar m)) =>
-  AdditiveAction m
+  Additive s => AdditiveAction s m | m -> s
   where
-  type AdditiveScalar m :: Type
 
   infixl 6 |+
-  (|+) :: m -> AdditiveScalar m -> m
+  (|+) :: m -> s -> m
 
 infixl 6 +|
 
@@ -41,18 +38,18 @@ infixl 6 +|
 --
 -- > (+|) == flip (|+)
 -- > zero +| m = m
-(+|) :: (AdditiveAction m) => AdditiveScalar m -> m -> m
+(+|) :: (AdditiveAction s m) => s -> m -> m
 (+|) = flip (|+)
 
 -- | Subtractive Action
 --
 -- > m |- zero = m
 class
-  (AdditiveAction m, Subtractive (AdditiveScalar m)) =>
-  SubtractiveAction m
+  (AdditiveAction s m, Subtractive s) =>
+  SubtractiveAction s m | m -> s
   where
   infixl 6 |-
-  (|-) :: m -> AdditiveScalar m -> m
+  (|-) :: m -> s -> m
 
 infixl 6 -|
 
@@ -60,7 +57,7 @@ infixl 6 -|
 --
 -- > (-|) == (+|) . negate
 -- > zero -| m = negate m
-(-|) :: (AdditiveAction m, Subtractive m) => AdditiveScalar m -> m -> m
+(-|) :: (AdditiveAction s m, Subtractive m) => s -> m -> m
 a -| b = a +| negate b
 
 -- | Multiplicative Action
@@ -68,13 +65,12 @@ a -| b = a +| negate b
 -- > m |* one = m
 -- > m |* zero = zero
 class
-  (Multiplicative (Scalar m)) =>
-  MultiplicativeAction m
+  (Multiplicative s) =>
+  MultiplicativeAction s m | m -> s
   where
-  type Scalar m :: Type
 
   infixl 7 |*
-  (|*) :: m -> Scalar m -> m
+  (|*) :: m -> s -> m
 
 infixl 7 *|
 
@@ -83,24 +79,24 @@ infixl 7 *|
 -- > (*|) == flip (|*)
 -- > one *| m = one
 -- > zero *| m = zero
-(*|) :: (MultiplicativeAction m) => Scalar m -> m -> m
+(*|) :: (MultiplicativeAction s m) => s -> m -> m
 (*|) = flip (|*)
 
 -- | Divisive Action
 --
 -- > m |/ one = m
 class
-  (Divisive (Scalar m), MultiplicativeAction m) =>
-  DivisiveAction m
+  (Divisive s, MultiplicativeAction s m) =>
+  DivisiveAction s m
   where
   infixl 7 |/
-  (|/) :: m -> Scalar m -> m
+  (|/) :: m -> s -> m
 
 -- | left scalar division
 --
 -- > (/|) == (*|) . recip
 -- > one |/ m = recip m
-(/|) :: (MultiplicativeAction m, Divisive m) => Scalar m -> m -> m
+(/|) :: (MultiplicativeAction s m, Divisive m) => s -> m -> m
 a /| b = a *| recip b
 
 -- | A <https://en.wikipedia.org/wiki/Module_(mathematics) Module>
@@ -110,23 +106,21 @@ a /| b = a *| recip b
 -- > c |* (a + b) == (c |* a) + (c |* b)
 -- > a *| zero == zero
 -- > a *| b == b |* a
-type Module m = (Distributive (Scalar m), MultiplicativeAction m)
+type Module s m = (Distributive s, MultiplicativeAction s m)
 
 -- | An action of a set of numbers on itself
 newtype TrivialAction a = TrivialAction {
   getTrivialAction :: a
 } deriving (Eq, Ord, Additive, Subtractive, Multiplicative, Divisive)
 
-instance Additive a => AdditiveAction (TrivialAction a) where
-  type AdditiveScalar (TrivialAction a) = a
+instance Additive a => AdditiveAction a (TrivialAction a) where
   TrivialAction a |+ b = TrivialAction (a + b)
 
-instance Subtractive a => SubtractiveAction (TrivialAction a) where
+instance Subtractive a => SubtractiveAction a (TrivialAction a) where
   TrivialAction a |- b = TrivialAction (a - b)
 
-instance Multiplicative a => MultiplicativeAction (TrivialAction a) where
-  type Scalar (TrivialAction a) = a
+instance Multiplicative a => MultiplicativeAction a (TrivialAction a) where
   TrivialAction a |* b = TrivialAction (a * b)
 
-instance Divisive a => DivisiveAction (TrivialAction a) where
+instance Divisive a => DivisiveAction a (TrivialAction a) where
   TrivialAction a |/ b = TrivialAction (a / b)

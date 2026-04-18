@@ -71,5 +71,7 @@ library
     NumHask.Exception
     NumHask.Prelude
 
-  default-extensions: RebindableSyntax
+  default-extensions:
+    FunctionalDependencies
+    RebindableSyntax
 

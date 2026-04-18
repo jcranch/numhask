@@ -75,13 +75,13 @@ newtype Positive a = UnsafePositive {unPositive :: a}
       Integral,
       FromInteger,
       FromRational,
-      Basis,
-      Direction,
+      Basis m b,
+      Direction d,
       Epsilon,
-      AdditiveAction,
-      SubtractiveAction,
-      MultiplicativeAction,
-      DivisiveAction,
+      AdditiveAction s,
+      SubtractiveAction s,
+      MultiplicativeAction s,
+      DivisiveAction s,
       JoinSemiLattice,
       MeetSemiLattice,
       UpperBounded
@@ -105,8 +105,7 @@ instance (ToRatio a b) => ToRatio (Positive a) b where
 instance (Additive a, JoinSemiLattice a) => LowerBounded (Positive a) where
   bottom = UnsafePositive zero
 
-instance QuotientField (Positive P.Double) where
-  type Whole (Positive P.Double) = Positive P.Int
+instance QuotientField (Positive P.Int) (Positive P.Double) where
   properFraction (UnsafePositive a) = (\(n, r) -> (UnsafePositive n, UnsafePositive r)) (P.properFraction a)
   ceiling = properFraction >>> P.fst >>> (+ one)
   floor = properFraction >>> P.fst

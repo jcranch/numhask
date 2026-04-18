@@ -19,7 +19,6 @@ module NumHask.Algebra.Field
 where
 
 import Data.Bool (bool)
-import Data.Kind
 import NumHask.Algebra.Additive (Additive (..), Subtractive (..), (-))
 import NumHask.Algebra.Multiplicative
   ( Divisive (..),
@@ -116,9 +115,8 @@ instance (ExpField b) => ExpField (a -> b) where
 -- See [Field of fractions](https://en.wikipedia.org/wiki/Field_of_fractions)
 --
 -- > \a -> a - one < floor a <= a <= ceiling a < a + one
-class (SemiField a) => QuotientField a where
-  type Whole a :: Type
-  properFraction :: a -> (Whole a, a)
+class (SemiField a) => QuotientField i a | a -> i where
+  properFraction :: a -> (i, a)
 
   -- | round to the nearest Int
   --
@@ -129,8 +127,8 @@ class (SemiField a) => QuotientField a where
   --
   -- >>> round (2.5 :: Double)
   -- 2
-  round :: a -> Whole a
-  default round :: (Subtractive a, Integral (Whole a), P.Eq (Whole a), P.Ord a, Subtractive (Whole a)) => a -> Whole a
+  round :: a -> i
+  default round :: (Subtractive a, Integral i, P.Eq i, P.Ord a, Subtractive i) => a -> i
   round x = case properFraction x of
     (n, r) ->
       let m = bool (n + one) (n - one) (r P.< zero)
@@ -147,8 +145,8 @@ class (SemiField a) => QuotientField a where
   --
   -- >>> ceiling (1.001 :: Double)
   -- 2
-  ceiling :: a -> Whole a
-  default ceiling :: (P.Ord a, Distributive (Whole a)) => a -> Whole a
+  ceiling :: a -> i
+  default ceiling :: (P.Ord a, Distributive i) => a -> i
   ceiling x = bool n (n + one) (r P.> zero)
     where
       (n, r) = properFraction x
@@ -157,8 +155,8 @@ class (SemiField a) => QuotientField a where
   --
   -- >>> floor (1.001 :: Double)
   -- 1
-  floor :: a -> Whole a
-  default floor :: (P.Ord a, Subtractive (Whole a), Distributive (Whole a)) => a -> Whole a
+  floor :: a -> i
+  default floor :: (P.Ord a, Subtractive i, Distributive i) => a -> i
   floor x = bool n (n - one) (r P.< zero)
     where
       (n, r) = properFraction x
@@ -170,16 +168,14 @@ class (SemiField a) => QuotientField a where
   --
   -- >>> truncate (-1.001 :: Double)
   -- -1
-  truncate :: a -> Whole a
-  default truncate :: (P.Ord a) => a -> Whole a
+  truncate :: a -> i
+  default truncate :: (P.Ord a) => a -> i
   truncate x = bool (ceiling x) (floor x) (x P.> zero)
 
-instance QuotientField P.Float where
-  type Whole P.Float = P.Int
+instance QuotientField P.Int P.Float where
   properFraction = P.properFraction
 
-instance QuotientField P.Double where
-  type Whole P.Double = P.Int
+instance QuotientField P.Int P.Double where
   properFraction = P.properFraction
 
 -- | infinity is defined for any 'Field'.
@@ -287,7 +283,7 @@ half = one / two
 --
 -- >>> modF 1.5 1.2
 -- 0.30000000000000004
-modF :: (Eq a, Field a, FromIntegral a (Whole a), QuotientField a) => a -> a -> a
+modF :: (Eq a, Field a, FromIntegral a i, QuotientField i a) => a -> a -> a
 modF n d
   | d == infinity = n
   | d == zero = nan
@@ -295,13 +291,13 @@ modF n d
 
 -- | Approximate diviso for fields.
 --
--- Compared with 'NumHask.Algebra.Field.div', divF returns the original type rather than the 'Whole' type.
+-- Compared with 'NumHask.Algebra.Field.div', divF returns the original type rather than the 'i' type.
 --
 -- @since 0.13
 --
 -- >>> divF 1.5 1.2
 -- 1.0
-divF :: (Eq a, Field a, FromIntegral a (Whole a), QuotientField a) => a -> a -> a
+divF :: (Eq a, Field a, FromIntegral a i, QuotientField i a) => a -> a -> a
 divF n d
   | d == infinity = zero
   | d == zero = infinity
@@ -313,7 +309,7 @@ divF n d
 --
 -- >>> divModF 1.5 1.2
 -- (1.0,0.30000000000000004)
-divModF :: (Eq a, Field a, FromIntegral a (Whole a), QuotientField a) => a -> a -> (a, a)
+divModF :: (Eq a, Field a, FromIntegral a i, QuotientField i a) => a -> a -> (a, a)
 divModF n d
   | d == infinity = (zero, n)
   | d == zero = (infinity, nan)
