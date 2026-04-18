@@ -73,6 +73,7 @@ library
     NumHask.Prelude
 
   default-extensions:
+    DerivingVia
     FunctionalDependencies
     RebindableSyntax
 

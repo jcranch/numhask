@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeFamilies #-}
-
 -- | Algebra for Actions
 --
 -- Convention: the |'s in the operators point towards the higher-kinded number, representing an operator or action __into__ a structure.

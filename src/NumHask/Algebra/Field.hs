@@ -1,5 +1,4 @@
 {-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE TypeFamilies #-}
 
 -- | [field](https://en.wikipedia.org/wiki/Field_(mathematics\)) classes
 module NumHask.Algebra.Field

@@ -1,6 +1,4 @@
 {-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 -- |  A positive number type, defined as existing on [zero, +infinity)
