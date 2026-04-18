@@ -5,6 +5,7 @@ module NumHask.Algebra.Additive
     sum,
     accsum,
     Subtractive (..),
+    subtract
   )
 where
 
@@ -14,7 +15,7 @@ import Data.Traversable (mapAccumL)
 import Data.Word (Word, Word16, Word32, Word64, Word8)
 import GHC.Natural (Natural (..))
 import NumHask.Data.Interop (FromBase (..))
-import Prelude (Bool, Double, Eq, Float, Int, Integer, Ord, Show, fromInteger)
+import Prelude (Bool, Double, Eq, Float, Int, Integer, Ord, Show, flip, fromInteger)
 import Prelude qualified as P
 
 -- $setup
@@ -97,6 +98,13 @@ class (Additive a) => Subtractive a where
   infixl 6 -
   (-) :: a -> a -> a
   a - b = a + negate b
+
+-- | Flipped subtraction, useful for currying
+-- >>> subtract 3 <$> [10,20,30]
+-- [7,17,27]
+subtract :: Subtractive a => a -> a -> a
+subtract = flip (-)
+
 
 instance P.Num a => Additive (FromBase a) where
   FromBase x + FromBase y = FromBase (x P.+ y)
