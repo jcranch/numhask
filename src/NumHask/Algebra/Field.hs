@@ -24,9 +24,20 @@ import NumHask.Algebra.Multiplicative
     Multiplicative (..),
     (/),
   )
-import NumHask.Algebra.Ring (Distributive, Ring, two)
-import NumHask.Data.Integral (FromIntegral (..), Integral, even)
-import Prelude (Eq (..), (.))
+import NumHask.Algebra.Ring
+  ( Distributive,
+    Ring,
+    two,
+  )
+import NumHask.Data.Integral
+  ( FromIntegral (..),
+    Integral,
+    even,
+  )
+import Prelude
+  ( Eq (..),
+    (.),
+  )
 import Prelude qualified as P
 
 -- $setup
@@ -127,7 +138,7 @@ class (SemiField a) => QuotientField i a | a -> i where
   -- >>> round (2.5 :: Double)
   -- 2
   round :: a -> i
-  default round :: (Subtractive a, Integral i, P.Eq i, P.Ord a, Subtractive i) => a -> i
+  default round :: (Subtractive a, Integral i, P.Eq i, P.Ord a) => a -> i
   round x = case properFraction x of
     (n, r) ->
       let m = bool (n + one) (n - one) (r P.< zero)

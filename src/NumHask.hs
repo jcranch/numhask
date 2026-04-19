@@ -94,7 +94,7 @@ module NumHask
     normSquared,
 
     -- * Integral
-    Integral (..),
+    Integral,
     ToIntegral (..),
     ToInt,
     FromIntegral (..),
@@ -205,7 +205,7 @@ import NumHask.Data.Integral
   ( FromInt,
     FromInteger (..),
     FromIntegral (..),
-    Integral (..),
+    Integral,
     ToInt,
     ToIntegral (..),
     even,

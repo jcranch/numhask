@@ -1,6 +1,19 @@
 -- | Integral classes
 module NumHask.Data.Integral
-  ( Integral (..),
+  ( Rounding,
+    ToZero (..),
+    ToMinusInfty (..),
+    ToNearest (..),
+    Remaindered (..),
+    div,
+    mod,
+    divMod,
+    quot,
+    rem,
+    quotRem,
+    Integral,
+    FullIntegral,
+    NonnegativeIntegral,
     ToIntegral (..),
     ToInt,
     FromIntegral (..),
@@ -10,7 +23,7 @@ module NumHask.Data.Integral
     odd,
     (^^),
     (^),
-  )
+    )
 where
 
 import Data.Int (Int16, Int32, Int64, Int8)
@@ -20,101 +33,170 @@ import GHC.Natural (Natural (..), naturalFromInteger)
 import NumHask.Algebra.Additive
 import NumHask.Algebra.Multiplicative
 import NumHask.Algebra.Ring
+import NumHask.Data.Interop (FromBase (..))
 import Prelude (Double, Float, Int, Integer, fst, snd, (.))
 import Prelude qualified as P
 
--- $setup
+
+class Rounding r
+
+data ToZero = ToZero
+instance Rounding ToZero
+
+data ToMinusInfty = ToMinusInfty
+instance Rounding ToMinusInfty
+
+data ToNearest = ToNearest
+instance Rounding ToNearest
+
+
+-- | A Remaindered must satisfy the law
 --
--- >>> :m -Prelude
--- >>> :set -XRebindableSyntax
--- >>> import NumHask.Prelude
+-- prop> \r a b -> b == zero || b * quotient r a b + remainder r a b == a
+class Rounding r => Remaindered r t where
 
--- | An Integral is anything that satisfies the law:
+  quotient :: r -> t -> t -> t
+  quotient r x y = fst (quotientRemainder r x y)
+
+  remainder :: r -> t -> t -> t
+  remainder r x y = snd (quotientRemainder r x y)
+
+  quotientRemainder :: r -> t -> t -> (t, t)
+  quotientRemainder r x y = (quotient r x y, remainder r x y)
+
+  {-# MINIMAL (quotient, remainder) | quotientRemainder #-}
+
+div :: Remaindered ToMinusInfty t => t -> t -> t
+div = quotient ToMinusInfty
+
+mod :: Remaindered ToMinusInfty t => t -> t -> t
+mod = remainder ToMinusInfty
+
+divMod :: Remaindered ToMinusInfty t => t -> t -> (t, t)
+divMod = quotientRemainder ToMinusInfty
+
+quot :: Remaindered ToZero t => t -> t -> t
+quot = quotient ToZero
+
+rem :: Remaindered ToZero t => t -> t -> t
+rem = remainder ToZero
+
+quotRem :: Remaindered ToZero t => t -> t -> (t, t)
+quotRem = quotientRemainder ToZero
+
+
+instance P.Integral a => Remaindered ToMinusInfty (FromBase a) where
+  quotient _ (FromBase x) (FromBase y) = FromBase (P.div x y)
+  remainder _ (FromBase x) (FromBase y) = FromBase (P.mod x y)
+  quotientRemainder _ (FromBase x) (FromBase y) = let
+    (q,r) = P.divMod x y
+    in (FromBase q, FromBase r)
+
+instance P.Integral a => Remaindered ToZero (FromBase a) where
+  quotient _ (FromBase x) (FromBase y) = FromBase (P.quot x y)
+  remainder _ (FromBase x) (FromBase y) = FromBase (P.rem x y)
+  quotientRemainder _ (FromBase x) (FromBase y) = let
+    (q,r) = P.quotRem x y
+    in (FromBase q, FromBase r)
+
+deriving via FromBase Int instance Remaindered ToMinusInfty Int
+deriving via FromBase Int instance Remaindered ToZero Int
+
+deriving via FromBase Integer instance Remaindered ToMinusInfty Integer
+deriving via FromBase Integer instance Remaindered ToZero Integer
+
+deriving via FromBase Natural instance Remaindered ToMinusInfty Natural
+deriving via FromBase Natural instance Remaindered ToZero Natural
+
+deriving via FromBase Int8 instance Remaindered ToMinusInfty Int8
+deriving via FromBase Int8 instance Remaindered ToZero Int8
+
+deriving via FromBase Int16 instance Remaindered ToMinusInfty Int16
+deriving via FromBase Int16 instance Remaindered ToZero Int16
+
+deriving via FromBase Int32 instance Remaindered ToMinusInfty Int32
+deriving via FromBase Int32 instance Remaindered ToZero Int32
+
+deriving via FromBase Int64 instance Remaindered ToMinusInfty Int64
+deriving via FromBase Int64 instance Remaindered ToZero Int64
+
+deriving via FromBase Word instance Remaindered ToMinusInfty Word
+deriving via FromBase Word instance Remaindered ToZero Word
+
+deriving via FromBase Word8 instance Remaindered ToMinusInfty Word8
+deriving via FromBase Word8 instance Remaindered ToZero Word8
+
+deriving via FromBase Word16 instance Remaindered ToMinusInfty Word16
+deriving via FromBase Word16 instance Remaindered ToZero Word16
+
+deriving via FromBase Word32 instance Remaindered ToMinusInfty Word32
+deriving via FromBase Word32 instance Remaindered ToZero Word32
+
+deriving via FromBase Word64 instance Remaindered ToMinusInfty Word64
+deriving via FromBase Word64 instance Remaindered ToZero Word64
+
+
+instance Remaindered r b => Remaindered r (a -> b) where
+  quotient r f g x = quotient r (f x) (g x)
+  remainder r f g x = remainder r (f x) (g x)
+
+
+-- | The Integral class in the base prelude is extremely vague about
+-- what it's to be used for, which is dangerous: it's simultaneously
+-- possible to assume that it's only to be used for things very
+-- similar to the integers, and also to put instances of it for other
+-- things with division with remainder. So, for example, a^b is
+-- defined for any integral type, and one could put an Integral
+-- instance on the Gaussian integers and attempt to evaluate 3^i.
 --
--- prop> \a b -> b == zero || b * (a `div` b) + (a `mod` b) == a
---
--- >>> 3 `divMod` 2
--- (1,1)
---
--- >>> (-3) `divMod` 2
--- (-2,1)
---
--- >>> (-3) `quotRem` 2
--- (-1,-1)
-class
-  (Distributive a) =>
-  Integral a
-  where
-  infixl 7 `div`, `mod`
-  div :: a -> a -> a
-  div a1 a2 = fst (divMod a1 a2)
-  mod :: a -> a -> a
-  mod a1 a2 = snd (divMod a1 a2)
+-- We thus give classes with much more precise uses.
 
-  divMod :: a -> a -> (a, a)
+-- | This is used for types which model the naturals or integers.
+class (Ring a, Remaindered ToMinusInfty a, Remaindered ToZero a) => Integral a where
 
-  quot :: a -> a -> a
-  quot a1 a2 = fst (quotRem a1 a2)
-  rem :: a -> a -> a
-  rem a1 a2 = snd (quotRem a1 a2)
+-- | This is used for types which model the integers.
+class Integral a => FullIntegral a where
 
-  quotRem :: a -> a -> (a, a)
+-- | This is used for types which model the naturals.
+class Integral a => NonnegativeIntegral a where
 
-instance Integral Int where
-  divMod = P.divMod
-  quotRem = P.quotRem
 
-instance Integral Integer where
-  divMod = P.divMod
-  quotRem = P.quotRem
+instance Integral Integer
+instance FullIntegral Integer
 
-instance Integral Natural where
-  divMod = P.divMod
-  quotRem = P.quotRem
+instance Integral Int
+instance FullIntegral Int
 
-instance Integral Int8 where
-  divMod = P.divMod
-  quotRem = P.quotRem
+instance Integral Int8
+instance FullIntegral Int8
 
-instance Integral Int16 where
-  divMod = P.divMod
-  quotRem = P.quotRem
+instance Integral Int16
+instance FullIntegral Int16
 
-instance Integral Int32 where
-  divMod = P.divMod
-  quotRem = P.quotRem
+instance Integral Int32
+instance FullIntegral Int32
 
-instance Integral Int64 where
-  divMod = P.divMod
-  quotRem = P.quotRem
+instance Integral Int64
+instance FullIntegral Int64
 
-instance Integral Word where
-  divMod = P.divMod
-  quotRem = P.quotRem
+instance Integral Natural
+instance NonnegativeIntegral Natural
 
-instance Integral Word8 where
-  divMod = P.divMod
-  quotRem = P.quotRem
+instance Integral Word
+instance NonnegativeIntegral Word
 
-instance Integral Word16 where
-  divMod = P.divMod
-  quotRem = P.quotRem
+instance Integral Word8
+instance NonnegativeIntegral Word8
 
-instance Integral Word32 where
-  divMod = P.divMod
-  quotRem = P.quotRem
+instance Integral Word16
+instance NonnegativeIntegral Word16
 
-instance Integral Word64 where
-  divMod = P.divMod
-  quotRem = P.quotRem
+instance Integral Word32
+instance NonnegativeIntegral Word32
 
-instance (Integral b) => Integral (a -> b) where
-  div f f' a = f a `div` f' a
-  mod f f' a = f a `mod` f' a
-  divMod f f' = (\a -> fst (f a `divMod` f' a), \a -> snd (f a `divMod` f' a))
-  quot f f' a = f a `mod` f' a
-  rem f f' a = f a `mod` f' a
-  quotRem f f' = (\a -> fst (f a `quotRem` f' a), \a -> snd (f a `quotRem` f' a))
+instance Integral Word64
+instance NonnegativeIntegral Word64
+
 
 -- |
 -- >>> even 2
@@ -128,7 +210,8 @@ even n = n `rem` (one + one) P.== zero
 odd :: (P.Eq a, Integral a) => a -> P.Bool
 odd = P.not . even
 
--- | toIntegral is kept separate from Integral to help with compatability issues.
+
+-- | toIntegral is kept separate from Integral to help with compatibility issues.
 --
 -- > toIntegral a == a
 class ToIntegral a b where
@@ -369,6 +452,7 @@ instance FromIntegral Word32 Word32 where
 instance FromIntegral Word64 Word64 where
   fromIntegral = P.id
 
+
 -- | 'fromInteger' is special in two ways:
 --
 -- - numeric integral literals (like "42") are interpreted specifically as "fromInteger (42 :: GHC.Num.Integer)". The prelude version is used as default (or whatever fromInteger is in scope if RebindableSyntax is set).
@@ -425,6 +509,7 @@ deriving instance FromInteger a => FromInteger (Sum a)
 
 deriving instance FromInteger a => FromInteger (Product a)
 
+
 infixr 8 ^^
 
 -- | raise a number to an 'Integral' power
@@ -435,7 +520,7 @@ infixr 8 ^^
 -- >>> 2 ^^ (-2)
 -- 0.25
 (^^) ::
-  (P.Ord b, Divisive a, Subtractive b, Integral b) =>
+  (P.Ord b, Divisive a, Integral b) =>
   a ->
   b ->
   a

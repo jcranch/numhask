@@ -48,7 +48,7 @@ numerator (a :% _) = a
 denominator :: Ratio a -> a
 denominator (_ :% a) = a
 
-instance (P.Eq a, Subtractive a, EndoBased a, Absolute a a, Integral a) => P.Eq (Ratio a) where
+instance (P.Eq a, EndoBased a, Absolute a a, Integral a) => P.Eq (Ratio a) where
   a@(xa :% ya) == b@(xb :% yb)
     | isRNaN a P.|| isRNaN b = P.False
     | xa == zero P.&& xb == zero = P.True
@@ -215,7 +215,7 @@ instance FromRational (Ratio Integer) where
 --
 -- prop> \a b -> reduce a b == a :% b || b == zero
 reduce ::
-  (P.Eq a, Subtractive a, EndoBased a, Integral a) => a -> a -> Ratio a
+  (P.Eq a, EndoBased a, Integral a) => a -> a -> Ratio a
 reduce x y
   | x P.== zero P.&& y P.== zero = zero :% zero
   | z P.== zero = one :% zero

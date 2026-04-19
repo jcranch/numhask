@@ -69,8 +69,9 @@ newtype Positive a = UnsafePositive {unPositive :: a}
   deriving newtype
     ( Additive,
       Multiplicative,
+      Subtractive,
       Divisive,
-      Integral,
+      Remaindered r,
       FromInteger,
       FromRational,
       Basis m b,
@@ -84,6 +85,8 @@ newtype Positive a = UnsafePositive {unPositive :: a}
       MeetSemiLattice,
       UpperBounded
     )
+
+deriving instance Integral a => Integral (Positive a)
 
 instance (MeetSemiLattice a, Integral a) => FromIntegral (Positive a) a where
   fromIntegral a = positive a
