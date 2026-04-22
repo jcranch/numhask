@@ -5,15 +5,16 @@ module NumHask.Algebra.Field
   ( SemiField,
     Field,
     ExpField (..),
-    QuotientField (..),
     infinity,
     negInfinity,
     nan,
     TrigField (..),
     half,
-    modF,
-    divF,
-    divModF,
+    Roundable (..),
+    round,
+    truncate,
+    floor,
+    ceiling,
   )
 where
 
@@ -30,13 +31,20 @@ import NumHask.Algebra.Ring
     two,
   )
 import NumHask.Data.Integral
-  ( FromIntegral (..),
-    Integral,
-    even,
+  ( Rounding,
+    ToMinusInfty (..),
+    ToPlusInfty (..),
+    ToZero (..),
+    ToNearest (..),
+  )
+import NumHask.Data.Interop
+  ( FromBase (..),
   )
 import Prelude
-  ( Eq (..),
+  ( Ord (..),
+    Bool (..),
     (.),
+    (<$>),
   )
 import Prelude qualified as P
 
@@ -120,73 +128,69 @@ instance (ExpField b) => ExpField (a -> b) where
   exp f = exp . f
   log f = log . f
 
--- | Quotienting of a 'Field' into a 'NumHask.Algebra.Ring'
---
--- See [Field of fractions](https://en.wikipedia.org/wiki/Field_of_fractions)
---
--- > \a -> a - one < floor a <= a <= ceiling a < a + one
-class (SemiField a) => QuotientField i a | a -> i where
-  properFraction :: a -> (i, a)
 
-  -- | round to the nearest Int
-  --
-  -- Exact ties are managed by rounding down ties if the whole component is even.
-  --
-  -- >>> round (1.5 :: Double)
-  -- 2
-  --
-  -- >>> round (2.5 :: Double)
-  -- 2
-  round :: a -> i
-  default round :: (Subtractive a, Integral i, P.Eq i, P.Ord a) => a -> i
-  round x = case properFraction x of
-    (n, r) ->
-      let m = bool (n + one) (n - one) (r P.< zero)
-          half_up = abs' r + half
-          abs' a
-            | a P.< zero = negate a
-            | P.otherwise = a
-       in case P.compare half_up one of
-            P.LT -> n
-            P.EQ -> bool m n (even n)
-            P.GT -> m
+-- | Numbers that can be rounded
+class Rounding r => Roundable r i a where
 
-  -- | supply the next upper whole component
-  --
-  -- >>> ceiling (1.001 :: Double)
-  -- 2
-  ceiling :: a -> i
-  default ceiling :: (P.Ord a, Distributive i) => a -> i
-  ceiling x = bool n (n + one) (r P.> zero)
-    where
-      (n, r) = properFraction x
+  roundingWithRemainder :: r -> a -> (i, a)
 
-  -- | supply the previous lower whole component
-  --
-  -- >>> floor (1.001 :: Double)
-  -- 1
-  floor :: a -> i
-  default floor :: (P.Ord a, Subtractive i, Distributive i) => a -> i
-  floor x = bool n (n - one) (r P.< zero)
-    where
-      (n, r) = properFraction x
+  rounding :: r -> a -> i
+  rounding r x = P.fst (roundingWithRemainder r x)
 
-  -- | supply the whole component closest to zero
-  --
-  -- >>> floor (-1.001 :: Double)
-  -- -2
-  --
-  -- >>> truncate (-1.001 :: Double)
-  -- -1
-  truncate :: a -> i
-  default truncate :: (P.Ord a) => a -> i
-  truncate x = bool (ceiling x) (floor x) (x P.> zero)
 
-instance QuotientField P.Int P.Float where
-  properFraction = P.properFraction
+properFraction :: Roundable ToZero i a => a -> (i, a)
+properFraction = roundingWithRemainder ToZero
 
-instance QuotientField P.Int P.Double where
-  properFraction = P.properFraction
+truncate :: Roundable ToZero i a => a -> i
+truncate = rounding ToZero
+
+round :: Roundable ToNearest i a => a -> i
+round = rounding ToNearest
+
+ceiling :: Roundable ToPlusInfty i a => a -> i
+ceiling = rounding ToPlusInfty
+
+floor :: Roundable ToMinusInfty i a => a -> i
+floor = rounding ToMinusInfty
+
+instance P.RealFrac a => Roundable ToZero P.Int (FromBase a) where
+  roundingWithRemainder _ (FromBase x) = FromBase <$> P.properFraction x
+  rounding _ (FromBase x) = P.truncate x
+
+-- | A class used to define other roundings from ToZero by newtype deriving
+newtype FromTruncate a = FromTruncate a
+
+instance (Ord i, Ord a, Ring i, Ring a, Roundable ToZero i a) => Roundable ToNearest i (FromTruncate a) where
+  roundingWithRemainder _ (FromTruncate x)
+    | x >= zero = bool (q, FromTruncate r) (q+one, FromTruncate (r-one)) (x+x > one)
+    | True = bool (q, FromTruncate r) (q-one, FromTruncate (r+one)) (x+x <= negate one) where
+        (q,r) = properFraction x
+
+instance (Ord i, Ord a, Ring i, Ring a, Roundable ToZero i a) => Roundable ToMinusInfty i (FromTruncate a) where
+  roundingWithRemainder _ (FromTruncate x)
+    | x >= zero = (q, FromTruncate r)
+    | r < zero = (q-one, FromTruncate (r+one))
+    | True = (q, FromTruncate r) where
+        (q,r) = properFraction x
+
+instance (Ord i, Ord a, Ring i, Ring a, Roundable ToZero i a) => Roundable ToPlusInfty i (FromTruncate a) where
+  roundingWithRemainder _ (FromTruncate x)
+    | x <= zero = (q, FromTruncate r)
+    | r > zero = (q+one, FromTruncate (r-one))
+    | True = (q, FromTruncate r) where
+        (q,r) = properFraction x
+
+deriving via FromBase P.Float instance Roundable ToZero P.Int P.Float
+deriving via FromBase P.Double instance Roundable ToZero P.Int P.Double
+
+deriving via FromTruncate P.Float instance Roundable ToNearest P.Int P.Float
+deriving via FromTruncate P.Double instance Roundable ToNearest P.Int P.Double
+
+deriving via FromTruncate P.Float instance Roundable ToMinusInfty P.Int P.Float
+deriving via FromTruncate P.Double instance Roundable ToMinusInfty P.Int P.Double
+
+deriving via FromTruncate P.Float instance Roundable ToPlusInfty P.Int P.Float
+deriving via FromTruncate P.Double instance Roundable ToPlusInfty P.Int P.Double
 
 -- | infinity is defined for any 'Field'.
 --
@@ -286,43 +290,3 @@ instance (TrigField b) => TrigField (a -> b) where
 -- 0.5
 half :: (Additive a, Divisive a) => a
 half = one / two
-
--- | Approximate modulo for fields
---
--- @since 0.13
---
--- >>> modF 1.5 1.2
--- 0.30000000000000004
-modF :: (Eq a, Field a, FromIntegral a i, QuotientField i a) => a -> a -> a
-modF n d
-  | d == infinity = n
-  | d == zero = nan
-  | P.True = n - d * fromIntegral (floor (n / d))
-
--- | Approximate diviso for fields.
---
--- Compared with 'NumHask.Algebra.Field.div', divF returns the original type rather than the 'i' type.
---
--- @since 0.13
---
--- >>> divF 1.5 1.2
--- 1.0
-divF :: (Eq a, Field a, FromIntegral a i, QuotientField i a) => a -> a -> a
-divF n d
-  | d == infinity = zero
-  | d == zero = infinity
-  | P.True = fromIntegral (floor (n / d))
-
--- | Approximate `NumHask.Algebra.Field.divMod` for fields.
---
--- @since 0.13
---
--- >>> divModF 1.5 1.2
--- (1.0,0.30000000000000004)
-divModF :: (Eq a, Field a, FromIntegral a i, QuotientField i a) => a -> a -> (a, a)
-divModF n d
-  | d == infinity = (zero, n)
-  | d == zero = (infinity, nan)
-  | P.True = (div', n - d * div')
-  where
-    div' = fromIntegral (floor (n / d))

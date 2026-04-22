@@ -13,7 +13,6 @@ module NumHask.Data.Positive
   )
 where
 
-import Control.Category ((>>>))
 import Data.Bool (bool)
 import Data.Maybe
 import Numeric.Natural (Natural, minusNaturalMaybe)
@@ -106,18 +105,12 @@ instance (ToRatio a b) => ToRatio (Positive a) b where
 instance (Additive a, JoinSemiLattice a) => LowerBounded (Positive a) where
   bottom = UnsafePositive zero
 
-instance QuotientField (Positive P.Int) (Positive P.Double) where
-  properFraction (UnsafePositive a) = (\(n, r) -> (UnsafePositive n, UnsafePositive r)) (P.properFraction a)
-  ceiling = properFraction >>> P.fst >>> (+ one)
-  floor = properFraction >>> P.fst
-  truncate = floor
-  round x = case properFraction x of
-    (n, r) ->
-      let half_up = r + half
-       in case P.compare half_up one of
-            P.LT -> n
-            P.EQ -> bool (n + one) n (even n)
-            P.GT -> n + one
+instance Roundable r i a => Roundable r (Positive i) (Positive a) where
+  roundingWithRemainder p (UnsafePositive x) = let
+    (q,r) = roundingWithRemainder p x
+    in (UnsafePositive q, UnsafePositive r)
+  rounding p (UnsafePositive x) = UnsafePositive (rounding p x)
+
 
 -- | Constructor which returns zero for a negative number.
 --

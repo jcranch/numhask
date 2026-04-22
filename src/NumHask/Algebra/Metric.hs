@@ -31,6 +31,7 @@ import GHC.Natural (Natural (..))
 import NumHask.Algebra.Action
 import NumHask.Algebra.Additive
 import NumHask.Algebra.Field
+import NumHask.Data.Integral (ToNearest (..))
 import NumHask.Algebra.Lattice
 import NumHask.Algebra.Multiplicative
 import NumHask.Algebra.Ring
@@ -344,15 +345,9 @@ instance (TrigField a, ExpField a) => ExpField (EuclideanPair a) where
   exp (EuclideanPair (x, y)) = EuclideanPair (exp x * cos y, exp x * sin y)
   log (EuclideanPair (x, y)) = EuclideanPair (log (sqrt (x * x + y * y)), atan2 y x)
 
-instance (QuotientField i a) => QuotientField (EuclideanPair i) (EuclideanPair a) where
-
-  properFraction (EuclideanPair (x, y)) =
-    (EuclideanPair (xwhole, ywhole), EuclideanPair (xfrac, yfrac))
-    where
-      (xwhole, xfrac) = properFraction x
-      (ywhole, yfrac) = properFraction y
-
-  round (EuclideanPair (x, y)) = EuclideanPair (round x, round y)
-  ceiling (EuclideanPair (x, y)) = EuclideanPair (ceiling x, ceiling y)
-  floor (EuclideanPair (x, y)) = EuclideanPair (floor x, floor y)
-  truncate (EuclideanPair (x, y)) = EuclideanPair (truncate x, truncate y)
+instance Roundable ToNearest i a => Roundable ToNearest (EuclideanPair i) (EuclideanPair a) where
+  roundingWithRemainder _ (EuclideanPair (x,y)) = let
+    (q,r) = roundingWithRemainder ToNearest x
+    (q',r') = roundingWithRemainder ToNearest y
+    in (EuclideanPair (q,q'), EuclideanPair (r,r'))
+  rounding _ (EuclideanPair (x,y)) = EuclideanPair (round x, round y)

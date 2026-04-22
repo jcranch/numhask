@@ -3,6 +3,7 @@ module NumHask.Data.Integral
   ( Rounding,
     ToZero (..),
     ToMinusInfty (..),
+    ToPlusInfty (..),
     ToNearest (..),
     Remaindered (..),
     div,
@@ -45,6 +46,9 @@ instance Rounding ToZero
 
 data ToMinusInfty = ToMinusInfty
 instance Rounding ToMinusInfty
+
+data ToPlusInfty = ToPlusInfty
+instance Rounding ToPlusInfty
 
 data ToNearest = ToNearest
 instance Rounding ToNearest

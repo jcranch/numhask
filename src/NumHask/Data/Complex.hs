@@ -122,19 +122,12 @@ instance
 instance (Distributive a, Subtractive a) => InvolutiveRing (Complex a) where
   adj (Complex (r, i)) = r +: negate i
 
--- Can't use DerivingVia due to extra Whole constraints
-instance (Subtractive a, QuotientField i a) => QuotientField (Complex i) (Complex a) where
-
-  properFraction (Complex (x, y)) =
-    (Complex (xwhole, ywhole), Complex (xfrac, yfrac))
-    where
-      (xwhole, xfrac) = properFraction x
-      (ywhole, yfrac) = properFraction y
-
-  round (Complex (x, y)) = Complex (round x, round y)
-  ceiling (Complex (x, y)) = Complex (ceiling x, ceiling y)
-  floor (Complex (x, y)) = Complex (floor x, floor y)
-  truncate (Complex (x, y)) = Complex (truncate x, truncate y)
+instance Roundable ToNearest i a => Roundable ToNearest (Complex i) (Complex a) where
+  roundingWithRemainder _ (Complex (x,y)) = let
+    (q,r) = roundingWithRemainder ToNearest x
+    (q',r') = roundingWithRemainder ToNearest y
+    in (Complex (q,q'), Complex (r,r'))
+  rounding _ (Complex (x,y)) = Complex (rounding ToNearest x, rounding ToNearest y)
 
 -- | The squared norm: frequently useful, and doesn't require the
 -- ability to take square roots.

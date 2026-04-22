@@ -92,8 +92,11 @@ instance
     | signum x P.== negate one = negate y :% negate x
     | P.otherwise = y :% x
 
-instance (P.Ord a, EndoBased a, Absolute a a, ToInt a, Integral a, Ring a) => QuotientField Int (Ratio a) where
-  properFraction (n :% d) = let (w, r) = quotRem n d in (toIntegral w, r :% d)
+instance Remaindered r a => Roundable r a (Ratio a) where
+  roundingWithRemainder p (x :% y) = let
+    (q, r) = quotientRemainder p x y
+    in (q, r :% y)
+  rounding p (x :% y) = quotient p x y
 
 instance (P.Ord a, EndoBased a, Integral a, Ring a) => Basis (Ratio a) (Ratio a) (Ratio a) where
   basis (n :% _) =
