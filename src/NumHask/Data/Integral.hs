@@ -103,41 +103,87 @@ instance P.Integral a => Remaindered ToZero (FromBase a) where
     (q,r) = P.quotRem x y
     in (FromBase q, FromBase r)
 
+newtype FromMinusInfty a = FromMinusInfty a
+
+instance (P.Eq a, Ring a, Remaindered ToMinusInfty a) => Remaindered ToPlusInfty (FromMinusInfty a) where
+  quotientRemainder _ (FromMinusInfty x) (FromMinusInfty y)
+    | r P.== zero = (FromMinusInfty q, FromMinusInfty r)
+    | P.True = (FromMinusInfty (q + one), FromMinusInfty (r - y)) where
+        (q, r) = quotientRemainder ToMinusInfty x y
+  remainder _ (FromMinusInfty x) (FromMinusInfty y)
+    | r P.== zero = FromMinusInfty r
+    | P.True = FromMinusInfty (r - y) where
+        r = remainder ToMinusInfty x y
+
+instance (P.Ord a, Ring a, Remaindered ToMinusInfty a) => Remaindered ToNearest (FromMinusInfty a) where
+  quotientRemainder _ (FromMinusInfty x) (FromMinusInfty y)
+    | r + r > y = (FromMinusInfty (q + one), FromMinusInfty (r - y))
+    | P.True = (FromMinusInfty q, FromMinusInfty r) where
+        (q, r) = quotientRemainder ToMinusInfty x y
+  remainder _ (FromMinusInfty x) (FromMinusInfty y)
+    | r + r > y = FromMinusInfty (r - y)
+    | P.True = FromMinusInfty r where
+        r = remainder ToMinusInfty x y
+
 deriving via FromBase Int instance Remaindered ToMinusInfty Int
 deriving via FromBase Int instance Remaindered ToZero Int
+deriving via FromMinusInfty Int instance Remaindered ToPlusInfty Int
+deriving via FromMinusInfty Int instance Remaindered ToNearest Int
 
 deriving via FromBase Integer instance Remaindered ToMinusInfty Integer
 deriving via FromBase Integer instance Remaindered ToZero Integer
+deriving via FromMinusInfty Integer instance Remaindered ToPlusInfty Integer
+deriving via FromMinusInfty Integer instance Remaindered ToNearest Integer
 
 deriving via FromBase Natural instance Remaindered ToMinusInfty Natural
 deriving via FromBase Natural instance Remaindered ToZero Natural
+deriving via FromMinusInfty Natural instance Remaindered ToPlusInfty Natural
+deriving via FromMinusInfty Natural instance Remaindered ToNearest Natural
 
 deriving via FromBase Int8 instance Remaindered ToMinusInfty Int8
 deriving via FromBase Int8 instance Remaindered ToZero Int8
+deriving via FromMinusInfty Int8 instance Remaindered ToPlusInfty Int8
+deriving via FromMinusInfty Int8 instance Remaindered ToNearest Int8
 
 deriving via FromBase Int16 instance Remaindered ToMinusInfty Int16
 deriving via FromBase Int16 instance Remaindered ToZero Int16
+deriving via FromMinusInfty Int16 instance Remaindered ToPlusInfty Int16
+deriving via FromMinusInfty Int16 instance Remaindered ToNearest Int16
 
 deriving via FromBase Int32 instance Remaindered ToMinusInfty Int32
 deriving via FromBase Int32 instance Remaindered ToZero Int32
+deriving via FromMinusInfty Int32 instance Remaindered ToPlusInfty Int32
+deriving via FromMinusInfty Int32 instance Remaindered ToNearest Int32
 
 deriving via FromBase Int64 instance Remaindered ToMinusInfty Int64
 deriving via FromBase Int64 instance Remaindered ToZero Int64
+deriving via FromMinusInfty Int64 instance Remaindered ToPlusInfty Int64
+deriving via FromMinusInfty Int64 instance Remaindered ToNearest Int64
 
 deriving via FromBase Word instance Remaindered ToMinusInfty Word
 deriving via FromBase Word instance Remaindered ToZero Word
+deriving via FromMinusInfty Word instance Remaindered ToPlusInfty Word
+deriving via FromMinusInfty Word instance Remaindered ToNearest Word
 
 deriving via FromBase Word8 instance Remaindered ToMinusInfty Word8
 deriving via FromBase Word8 instance Remaindered ToZero Word8
+deriving via FromMinusInfty Word8 instance Remaindered ToPlusInfty Word8
+deriving via FromMinusInfty Word8 instance Remaindered ToNearest Word8
 
 deriving via FromBase Word16 instance Remaindered ToMinusInfty Word16
 deriving via FromBase Word16 instance Remaindered ToZero Word16
+deriving via FromMinusInfty Word16 instance Remaindered ToPlusInfty Word16
+deriving via FromMinusInfty Word16 instance Remaindered ToNearest Word16
 
 deriving via FromBase Word32 instance Remaindered ToMinusInfty Word32
 deriving via FromBase Word32 instance Remaindered ToZero Word32
+deriving via FromMinusInfty Word32 instance Remaindered ToPlusInfty Word32
+deriving via FromMinusInfty Word32 instance Remaindered ToNearest Word32
 
 deriving via FromBase Word64 instance Remaindered ToMinusInfty Word64
 deriving via FromBase Word64 instance Remaindered ToZero Word64
+deriving via FromMinusInfty Word64 instance Remaindered ToPlusInfty Word64
+deriving via FromMinusInfty Word64 instance Remaindered ToNearest Word64
 
 
 instance Remaindered r b => Remaindered r (a -> b) where
