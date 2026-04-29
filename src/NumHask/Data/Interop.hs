@@ -5,17 +5,18 @@ module NumHask.Data.Interop
   )
 where
 
-import Prelude (Eq, Ord)
+import Prelude (Enum, Eq, Ord)
 
 
 -- | A wrapper for putting NumHask instances on types with base
 -- numeric instances
 newtype FromBase a = FromBase {
   getFromBase :: a
-} deriving (Eq, Ord)
+} deriving (Enum, Eq, Ord)
 
 -- | A wrapper for putting base instances on types with NumHask
--- numeric instances
+-- numeric instances; to avoid orphan instances, we'll have to
+-- repeatedly define other versions of this.
 newtype ToBase a = ToBase {
   getToBase :: a
-} deriving (Eq, Ord)
+} deriving (Enum, Eq, Ord)

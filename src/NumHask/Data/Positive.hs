@@ -72,6 +72,7 @@ newtype Positive a = UnsafePositive {unPositive :: a}
       Divisive,
       Remaindered r,
       FromInteger,
+      ToInteger,
       FromRational,
       Basis m b,
       Direction d,

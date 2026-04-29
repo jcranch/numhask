@@ -20,36 +20,44 @@ module NumHask.Data.Integral
     FromIntegral (..),
     FromInt,
     FromInteger (..),
+    ToInteger (..),
     even,
     odd,
     (^^),
     (^),
+    ToBaseIntegral (..),
     )
 where
 
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Ord
+import Data.Ratio qualified as P
 import Data.Word (Word, Word16, Word32, Word64, Word8)
 import GHC.Natural (Natural (..), naturalFromInteger)
 import NumHask.Algebra.Additive
 import NumHask.Algebra.Multiplicative
 import NumHask.Algebra.Ring
 import NumHask.Data.Interop (FromBase (..))
-import Prelude (Double, Float, Int, Integer, fst, snd, (.))
+import Prelude (Double, Enum(..), Eq(..), Float, Int, Integer, error, fst, snd, (.))
 import Prelude qualified as P
 
 
+-- | A rounding convention
 class Rounding r
 
+-- | Rounding towards zero
 data ToZero = ToZero
 instance Rounding ToZero
 
+-- | Rounding towards minus infinity
 data ToMinusInfty = ToMinusInfty
 instance Rounding ToMinusInfty
 
+-- | Rounding towards plus infinity
 data ToPlusInfty = ToPlusInfty
 instance Rounding ToPlusInfty
 
+-- | Rounding to the nearest integer
 data ToNearest = ToNearest
 instance Rounding ToNearest
 
@@ -115,7 +123,7 @@ instance (P.Eq a, Ring a, Remaindered ToMinusInfty a) => Remaindered ToPlusInfty
     | P.True = FromMinusInfty (r - y) where
         r = remainder ToMinusInfty x y
 
-instance (P.Ord a, Ring a, Remaindered ToMinusInfty a) => Remaindered ToNearest (FromMinusInfty a) where
+instance (Ord a, Ring a, Remaindered ToMinusInfty a) => Remaindered ToNearest (FromMinusInfty a) where
   quotientRemainder _ (FromMinusInfty x) (FromMinusInfty y)
     | r + r > y = (FromMinusInfty (q + one), FromMinusInfty (r - y))
     | P.True = (FromMinusInfty q, FromMinusInfty r) where
@@ -191,7 +199,9 @@ instance Remaindered r b => Remaindered r (a -> b) where
   remainder r f g x = remainder r (f x) (g x)
 
 
--- | The Integral class in the base prelude is extremely vague about
+-- | This is used for types which model the naturals or integers.
+--
+-- The Integral class in the base prelude is extremely vague about
 -- what it's to be used for, which is dangerous: it's simultaneously
 -- possible to assume that it's only to be used for things very
 -- similar to the integers, and also to put instances of it for other
@@ -200,15 +210,57 @@ instance Remaindered r b => Remaindered r (a -> b) where
 -- instance on the Gaussian integers and attempt to evaluate 3^i.
 --
 -- We thus give classes with much more precise uses.
-
--- | This is used for types which model the naturals or integers.
-class (Ring a, Remaindered ToMinusInfty a, Remaindered ToZero a) => Integral a where
+class (Ord a, Ring a, FromInteger a, ToInteger a, Remaindered ToMinusInfty a, Remaindered ToZero a) => Integral a where
 
 -- | This is used for types which model the integers.
 class Integral a => FullIntegral a where
 
 -- | This is used for types which model the naturals.
 class Integral a => NonnegativeIntegral a where
+
+
+instance P.Num a => FromInteger (FromBase a) where
+  fromInteger = FromBase . P.fromInteger
+
+
+instance P.Integral a => Integral (FromBase a) where
+
+
+-- | This is used for defining base prelude numerical types
+newtype ToBaseIntegral a = ToBaseIntegral {
+  getBaseIntegral :: a
+} deriving (Eq, Ord, Remaindered r, FromInteger, ToInteger)
+
+
+instance (FromInteger a, Ring a) => P.Num (ToBaseIntegral a) where
+  ToBaseIntegral a + ToBaseIntegral b = ToBaseIntegral (a + b)
+  ToBaseIntegral a - ToBaseIntegral b = ToBaseIntegral (a - b)
+  negate (ToBaseIntegral a) = ToBaseIntegral (negate a)
+  ToBaseIntegral a * ToBaseIntegral b = ToBaseIntegral (a * b)
+  fromInteger = ToBaseIntegral . fromInteger
+  abs = error "Our implementation of Num for NumHask Rings doesn't define abs"
+  signum = error "Our implementation of Num for NumHask Rings doesn't define signum"
+
+
+instance (FromInteger a, ToInteger a, Ring a) => Enum (ToBaseIntegral a) where
+  toEnum = fromInteger . fromIntegral
+  fromEnum = toIntegral . toInteger
+  succ (ToBaseIntegral a) = ToBaseIntegral (a+one)
+  pred (ToBaseIntegral a) = ToBaseIntegral (a-one)
+
+
+instance (FromInteger a, ToInteger a, Integral a, Ord a) => P.Real (ToBaseIntegral a) where
+  toRational (ToBaseIntegral a) = toInteger a P.% 1
+
+
+instance (FromInteger a, ToInteger a, Integral a, Ord a) => P.Integral (ToBaseIntegral a) where
+  toInteger = toInteger
+  quot = quot
+  rem = rem
+  quotRem = quotRem
+  div = div
+  mod = mod
+  divMod = divMod
 
 
 instance Integral Integer
@@ -251,13 +303,13 @@ instance NonnegativeIntegral Word64
 -- |
 -- >>> even 2
 -- True
-even :: (P.Eq a, Integral a) => a -> P.Bool
+even :: (Integral a) => a -> P.Bool
 even n = n `rem` (one + one) P.== zero
 
 -- |
 -- >>> odd 3
 -- True
-odd :: (P.Eq a, Integral a) => a -> P.Bool
+odd :: (Integral a) => a -> P.Bool
 odd = P.not . even
 
 
@@ -560,6 +612,28 @@ deriving instance FromInteger a => FromInteger (Sum a)
 deriving instance FromInteger a => FromInteger (Product a)
 
 
+-- | A ToIntegral specialised to Integer, to help with typing
+class ToInteger a where
+  toInteger :: a -> Integer
+
+instance P.Integral a => ToInteger (FromBase a) where
+  toInteger (FromBase a) = P.toInteger a
+
+deriving via FromBase Integer instance ToInteger Integer
+deriving via FromBase Int instance ToInteger Int
+deriving via FromBase Int8 instance ToInteger Int8
+deriving via FromBase Int16 instance ToInteger Int16
+deriving via FromBase Int32 instance ToInteger Int32
+deriving via FromBase Int64 instance ToInteger Int64
+deriving via FromBase Natural instance ToInteger Natural
+deriving via FromBase Word instance ToInteger Word
+deriving via FromBase Word8 instance ToInteger Word8
+deriving via FromBase Word16 instance ToInteger Word16
+deriving via FromBase Word32 instance ToInteger Word32
+deriving via FromBase Word64 instance ToInteger Word64
+
+
+
 infixr 8 ^^
 
 -- | raise a number to an 'Integral' power
@@ -570,7 +644,7 @@ infixr 8 ^^
 -- >>> 2 ^^ (-2)
 -- 0.25
 (^^) ::
-  (P.Ord b, Divisive a, Integral b) =>
+  (Divisive a, Integral b) =>
   a ->
   b ->
   a

@@ -79,7 +79,7 @@ instance (P.Ord a, EndoBased a, Integral a, Ring a) => Additive (Ratio a) where
 instance (P.Ord a, EndoBased a, Integral a, Ring a) => Subtractive (Ratio a) where
   negate (x :% y) = negate x :% y
 
-instance (P.Ord a, EndoBased a, Integral a, Ring a) => Multiplicative (Ratio a) where
+instance (EndoBased a, Integral a, Ring a) => Multiplicative (Ratio a) where
   (x :% y) * (x' :% y') = reduce (x * x') (y * y')
 
   one = one :% one
@@ -218,7 +218,7 @@ instance FromRational (Ratio Integer) where
 --
 -- prop> \a b -> reduce a b == a :% b || b == zero
 reduce ::
-  (P.Eq a, EndoBased a, Integral a) => a -> a -> Ratio a
+  (EndoBased a, Integral a) => a -> a -> Ratio a
 reduce x y
   | x P.== zero P.&& y P.== zero = zero :% zero
   | z P.== zero = one :% zero
@@ -241,7 +241,7 @@ reduce x y
 --
 -- >>> gcd 72 60
 -- 12
-gcd :: (P.Eq a, EndoBased a, Integral a) => a -> a -> a
+gcd :: (EndoBased a, Integral a) => a -> a -> a
 gcd x y = gcd' (abs x) (abs y)
   where
     gcd' a b
